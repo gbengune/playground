@@ -1,30 +1,5 @@
-# TODOS
-# =============================================================================
-#If panda dataframes are not wanted, this solution could be used
-# This script can only bash-up and transfer all csv data in any folder, create tables with csv \n
-# first row characters and import csv dataset into the newly created tables \n
-# in the destination DB from a csv that have ";" as delimiter
-#----
-# This code can also import from csv with ',' delimiter, but the rows in the resulting table will all be concatenated
-#---
-#There is no limitation to the amount of csv in a folder.
-# Please change db credentials in class csv_worker before commencing
-# Please input range of rows to be copied in row 176:test=ln_split[1:10]...means consider row 1 till 9
-# Please input required information in the function's call below this page for execution
-# #Its better to create a schema in the db first and give the name of this schema in the last line calling the function below
-
-# =============================================================================
-
-
-# EXPLANATIONS
-# =============================================================================
-# This is used to pipe only csv-format data from local folder in system to database.
-# The csv data must not have headers.
-# Note: For this code to works, the information for the headers are assumed to be in the first row of the dataset
-# So this only works assuming the second row contains column names
-# Sql4 is meant to change the geometry types from varchar to geom.
-# If you wish to use SQL4,please uncomment the last code snipet before the Except Statement
-#
+#This code is non productive
+#There is a faster way but this one is just a sample
 # =============================================================================
 
 import glob
@@ -32,34 +7,30 @@ import re
 import psycopg2 as pg_con
 import time
 import logging
+from utils import pg_creds
 
-
-# a=os.getcwd() + '/meme.ods'
-#    #print(a)
-#    b=pd.read_excel(a)
-#    c=pd.DataFrame(b,columns=['layers','eakte'])
 
 class csv_worker:
-    # sk.create_engine="postgresql+psycopg2://postgres:3apStar+@localhost/trial"
 
-    cred = {
-        "pg_host": '#####',
-        "pg_user": '######',
-        "pg_port": 5432,
-        "pg_pass": '#####',
-        "pg_sdb": '#####',
 
-    }
-
-    conn = pg_con.connect(host=cred["pg_host"],
-                          user=cred["pg_user"],
-                          port=cred["pg_port"],
-                          password=cred["pg_pass"],
-                          database=cred["pg_sdb"]
-                          )
-
-    cur = conn.cursor()
-
+    def __init__(self):
+        try:
+            
+            
+            self.conn = self.pg_con.connect(  host=pg_creds["pg_host"],
+                                              user=pg_creds["pg_user"],
+                                              port=pg_creds["pg_port"],
+                                              password=pg_creds["pg_pass"],
+                                              database=pg_creds["pg_sdb"]
+                                  )
+        
+            self.cur = self.conn.cursor()
+            print(f'COnnection Successfull')
+            
+        except Exception as errors:
+            raise f'Error occured with connection: {errors}'
+            
+            
     def rd_csv_files_cr_db_table(self, db_schema_name, folder, file_format):
         try:
 
@@ -87,8 +58,8 @@ class csv_worker:
 
                     # splitted till the format was stripped.
                     # Values derived after this point will be hard to fortell so no more splits.
-                    print('Data converted was:', tb_name)
-                    print('------------------------------')
+                    print(f'Data converted was: {tb_name}')
+                    print(f'------------------------------')
                     tb_names_list.append(tb_name)
 
                     # defining table columns
@@ -123,13 +94,12 @@ class csv_worker:
 
                                      )
                     self.conn.commit()
-                    print('Table', '"' + tb_name.upper() + '"', 'created in DB',
-                          '"' + self.cred["pg_sdb"].upper() + '"')
-                    print('------------------------------')
+                    print(f'Table {tb_name.upper()} created in {self.cred["pg_sdb"].upper()}')
+                    print(f'------------------------------')
 
                     # ------------------ #PIPING data to table in the given database
 
-                    print('Total Row_length', len(ln_split))
+                    print(f'Total Row_length {len(ln_split)}')
 
                     #---instanciating no row scenario
                     if len(ln_split) == 0:
@@ -151,7 +121,7 @@ class csv_worker:
                                          )
                         self.conn.commit()
 
-                        print('All values (1) inserted in table:', tb_name.upper())
+                        print(f'All values (1) inserted in table: {tb_name.upper()}')
 
                         #instanciating all other row number scenarios
                     else:
@@ -162,11 +132,11 @@ class csv_worker:
                         #test = ln_split[1:]
 
 
-                        print('To be inserted row length more than 1')
+                        print(f'To be inserted row length more than 1')
                         print(type(test))
 
                         for f in test:
-                            # print(str(f).split(';'))
+                 
 
                             self.cur.execute(sql3 % (
                                 db_schema_name,
@@ -183,7 +153,7 @@ class csv_worker:
 
                             self.conn.commit()
 
-                            # print('All values inserted in table:', tb_name.upper())
+              
 
                     # --------------------Only enable the scripts below if you need to update the data type of geom columns as well
                     #self.cur.execute(sql4 % (db_schema_name,
@@ -198,23 +168,18 @@ class csv_worker:
 
 
         except Exception as er1:
-            print('Error:->', er1)
+            print(f'Error: {er1}')
         finally:
             if self.conn is not None:
                 self.conn.close()
 
-        print('Tables created:', tb_names_list)
-        print('Time taken is:', time.time() - st_time)
+        print(f'Tables created: {tb_names_list}')
+        print(f'Time taken is: {time.time() - st_time}')
 
 
 tb_names_list = []
-# print(tb_names_list)
 
 
-sql1 = """
-select * from public.achi
-
-"""
 
 sql2 = """   
 drop table if exists  "%s"."%s";
