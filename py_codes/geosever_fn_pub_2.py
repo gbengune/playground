@@ -1,13 +1,11 @@
-from geo.Geoserver import Geoserver
 import functools
+from geo.Geoserver import Geoserver
 #Importing geoserver credentials from utils
 #.env variables are all combined in utils file
-
 from playground.config.rep_utils import geos_creds
-
 import logging
 
- 
+
 #-----------------------------------------------------------------------------------------------------
 #Defining a file logger
 #File logging could also be triggered from an utils file 
