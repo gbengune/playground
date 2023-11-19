@@ -1,10 +1,7 @@
-<<<<<<< HEAD
-from geo.Geoserver import Geoserver
-import functools
-=======
+
 import functools
 from geo.Geoserver import Geoserver
->>>>>>> e78e2eb2720a8e35a3377a36857d4df2363ce9cd
+
 #Importing geoserver credentials from utils
 #.env variables are all combined in utils file
 from playground.config.rep_utils import geos_creds
