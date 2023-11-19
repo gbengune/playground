@@ -1,0 +1,217 @@
+#/*
+#   Created on:  03-08-2023
+#   Created by:  O.Aremu
+#   Description: Captures tables writtn in the function caller by the user in a given PostgreSQL DB \
+#                and performs  minimum and maximum aggregation on given column names in function call.
+                  Very robust, in that it can tell if datatype of column can be aggregated or not.
+                  It's also robust in that the aggregate result can be concatinated using any special
+                  character input by function user.
+#   Created for:  PostgreSQL Environment only
+
+
+#/*
+
+
+
+drop function if exists public.min_to_max;
+
+create or replace function public.min_to_max(	sch_name varchar default null ,
+												tab_name varchar default null ,
+												col_name varchar default null ,
+												symbol varchar default null
+											)
+
+returns text
+
+language plpgsql as
+
+$function$
+
+declare
+
+
+	ding_int text;
+	ding_numeric text;
+	calc_time timestamp := now();
+
+	info_holder text ;
+
+
+begin
+
+		----Initial message at the beginning of aggregation
+		raise info '%: Minimumum Maximum will now be calculated', calc_time;
+
+		---pg_typeof(column_name) could also be used, but for geometries
+		---this process was considered safer
+		---Also a loop could have been cleaner here, but that was ignored due to complications
+		----sometimes derived from loops
+
+
+		execute 'select
+
+						udt_name
+				from
+						information_schema.columns
+				where
+
+						table_schema= ''' || sch_name || '''
+						and
+						table_name= ''' || tab_name || '''
+						and
+						column_name=''' || col_name || '''
+				'
+						into
+							info_holder
+				;
+
+
+		---assertion error handling could also be used here but as it is advised
+		----that it should only be used if there is a bug, I decided to do more unit
+		----log based handling
+
+		if  sch_name='0' or sch_name is null then
+			raise notice '%: Error Index 1 data input Schema_name null', calc_time;
+			raise sqlstate '22002';
+			raise sqlstate '42P02';
+			raise sqlstate '2F005';
+			raise sqlstate '42703';
+
+		elsif sch_name ='' then
+			raise notice '%: Error Index 1 data input Schema_name empty', calc_time;
+		---------
+		elsif tab_name='0' or tab_name is null  then
+			raise notice '%: Error Index 2 data input Table_name null',calc_time;
+			raise sqlstate '22002';
+			raise sqlstate '42P02';
+			raise sqlstate '2F005';
+			raise sqlstate '42703';
+
+		elsif tab_name ='' then
+			raise notice '%: Error Index 2 data input Table_name empty', calc_time;
+
+		----------
+		elsif col_name='0' or col_name is null then
+			raise notice '%: Error Index 3 data input Column_name null',calc_time;
+			raise sqlstate '22002';
+			raise sqlstate '42P02';
+			raise sqlstate '2F005';
+			raise sqlstate '42703';
+
+		elsif col_name ='' then
+			raise notice '%: Error Index 3 data input Column_name empty', calc_time;
+
+		----------
+		elsif symbol is null or sch_name='' then
+			raise notice '%: Error Index 4 data input Symbol',calc_time;
+			raise sqlstate '22002';
+			raise sqlstate '42P02';
+			raise sqlstate '2F005';
+			raise sqlstate '42703';
+
+		----------
+		elsif info_holder~*'int' then
+		---execute 'select min(id_0) || ''' || symbol || '''  || max(id_0) from pros.subset' into ding;
+			execute 		'
+							select
+									---internal database entities get single quotes
+									min(' || quote_ident(col_name) || ')
+
+											||
+
+									---external character get 3 quatation marks
+									''' || symbol || '''
+
+								 			||
+
+									---internal database entities get single quotes
+									max(' || quote_ident(col_name)  || ')
+
+
+
+							 from
+
+								' || quote_ident(sch_name) || '.' || quote_ident(tab_name) || '
+
+
+							'
+
+								into
+									ding_int
+
+						;
+
+				raise notice '%: Process done on column % in table %.% ',calc_time,col_name,sch_name,tab_name;
+
+				return ding_int;
+
+
+
+			---if any one of filter or  case arguments is to be used here,
+			---greatest(numeric_column) with group by would be most suitable
+			---execute 'select min(id_0) || ''' || symbol || '''  || max(id_0) from pros.subset' into ding;
+			elsif info_holder~*'numeric|double|double precision'  then
+
+			execute 		'
+							select
+									---internal database entities get single quotes
+									min(' || quote_ident(col_name) || ')
+
+											||
+
+									---external character get 3 quatation marks
+									''' || symbol || '''
+
+								 			||
+
+									---internal database entities get single quotes
+									max(' || quote_ident(col_name)  || ')
+
+
+
+
+							 from
+
+								' || quote_ident(sch_name) || '.' || quote_ident(tab_name) || '
+
+--							group by
+--									' || quote_ident(col_name)  || '
+
+							'
+
+								into
+									ding_numeric
+
+						;
+
+				raise notice '%: Process done on column % in table %.% ',calc_time,col_name,sch_name,tab_name;
+
+				return ding_numeric;
+
+
+			---real datatypes could be tricky atimes
+			elsif info_holder not in ('int','timestamp','numeric','double precision','double') then
+				raise notice '%: DataType on column % in table %.% not compartible',calc_time,col_name,sch_name,tab_name;
+
+					return 'DataType incompartible';
+
+
+		else
+
+
+		end if;
+
+		 ---return format('min->max=%s',zding);
+
+
+
+end
+
+$function$;
+
+
+
+---Call function ("schema","table_name","column for minmax","special concat character for result")
+
+select public.min_to_max('pros','subset_b','fclass','----->')
+
