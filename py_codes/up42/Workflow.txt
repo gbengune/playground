@@ -1,0 +1,53 @@
+#in Windows Environment
+Run cmd
+
+#create a new parent and child folderfolder 
+parent_folder= up42
+store task pdf in parent folder
+create child folder=task
+
+#install jupyterlab in system
+pip install jupyterlab
+
+
+#HA to change powerprompt execution policy (running .bat) to run third party scripts (activating venv from jupyterlab command prompt)
+Get-ExecutionPolicy -list 
+
+#change the ExecutionPolicy for the current user
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+
+#Remove th policy
+Set-ExecutionPolicy -ExecutionPolicy Undefined -Scope CurrentUser
+
+
+
+Create venv-> python -m venv up42_timeseries
+
+#activate venv
+up42_timeseries\Scripts\activate
+
+#upgrade pip from 22.3.1 -> 23.3.1
+python.exe -m pip install --upgrade pip
+
+#move child folder "task" into venv folder
+
+#start installing libraries
+pip install pystac_client
+pip install Rasterio
+pip install Geopandas
+
+
+#FASTAPI
+pip install python-multipart
+pip install fastapi
+ pip install 'uvicorn[standard]'
+
+
+#create requirements file
+pip freeze > requirement.txt
+
+#Run jupyter lab from inside the venv to use its libraries
+jupyter lab -xfrozen_modules=off
+
+
